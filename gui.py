@@ -2,6 +2,8 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout
 from client_module import VoiceCommunication  # VoiceCommunication 모듈은 실제 모듈명으로 변경해야 합니다.
 from threading import Thread
+from time import sleep
+import asyncio
 
 class MyApp(QWidget):
     def __init__(self, typevoice, input_text_q, output_text_q):
@@ -34,12 +36,23 @@ class MyApp(QWidget):
         # text queue
         self.input_text_q = input_text_q
         self.output_text_q = output_text_q
+        
+        if typevoice:
+            tts_thread = Thread(target=self.get_tts_message, daemon=True)
+            tts_thread.start()
+        
+    def get_tts_message(self):
+        while True:
+            sleep(0.01)
+            text = self.output_text_q.get()
+            self.output_line.setText(text)
+            
 
     def on_return_pressed(self):
         # 입력 필드에서 텍스트를 가져와 출력 필드에 설정
         input_text = self.input_line.text()
         self.input_text_q.put(input_text)
-        self.output_line.setText(input_text)
+        # self.output_line.setText(input_text)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
