@@ -40,6 +40,7 @@ class ChatWindow(QWidget):
                     font-size: 16px;
                     border: none;
                 }
+                QListWidget::item { margin-bottom: 10px; }
             """)
             layout.addWidget(self.messageList)
 
@@ -111,6 +112,7 @@ class ChatWindow(QWidget):
             item.setForeground(QColor('white'))  # 글자색 설정
             item.setTextAlignment(Qt.AlignLeft)
             self.messageList.addItem(item)
+            self.messageList.scrollToBottom()  # 스크롤을 최하단으로 이동
 
     def send_message_by_space(self):
         # 입력 필드에서 텍스트를 가져와 출력 필드에 설정
@@ -132,6 +134,7 @@ class ChatWindow(QWidget):
             item.setForeground(QColor('white'))  # 글자색 설정
             item.setTextAlignment(Qt.AlignRight)
             self.messageList.addItem(item)
+            self.messageList.scrollToBottom()  # 스크롤을 최하단으로 이동
             self.input_line.clear()
     
     def hangupCall(self):
