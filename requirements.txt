@@ -4,3 +4,4 @@ pycryptodome
 gtts
 pydub
 faster_whisper
+PySimpleGUI
