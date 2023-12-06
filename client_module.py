@@ -9,9 +9,12 @@ from Crypto.Random import get_random_bytes
 from socket import timeout
 
 import io
-from gtts import gTTS
+from models.tts import base_tts
+from models.stt import base_stt
 from pydub import AudioSegment
 from faster_whisper import WhisperModel
+
+import queue
 
 class SharedBuf:
     def __init__(self):
@@ -41,17 +44,19 @@ class VoiceCommunication:
     MAX_BYTES_SEND = 512
     MAX_HEADER_LEN = 20
     SLEEPTIME = 0.0002
-    BUFMAX = 16000 * 3  # Assuming 16000 is your sample rate
+    BUFMAX = 512  # Assuming 16000 is your sample rate
     key = b'thisisthepasswordforAESencryptio'
     running = True
     item_available = Condition()
     audio_available = Condition()
     
-    model_size = "small"
-    whisper_model = WhisperModel(model_size, compute_type="int8")
+    # AUdio settings
     samplerate = 16000
     chunk_length = 1000
     buffer_length = int(samplerate * chunk_length / 1000)
+    
+    input_text_q = queue.Queue()
+    output_text_q = queue.Queue()
 
     def __init__(self, server_ip, server_port, source_name, destination_name, typevoice=False):
         self.server_ip = server_ip
@@ -66,7 +71,16 @@ class VoiceCommunication:
         self.iv = get_random_bytes(16)
         self.cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
         self.socket = self.connect(source_name, destination_name)
-
+        if typevoice:
+            self.BUFMAX = self.samplerate * 2
+            
+        # STT
+        self.stt_function = base_stt
+        
+        # TTS
+        self.tts_function = base_tts
+        
+        
     # Other methods (encrypt, decrypt, split_send_bytes, etc.) go here
     # Make sure to replace global variables with instance variables (e.g., self.running)
     def get_iv(self):
@@ -187,21 +201,9 @@ class VoiceCommunication:
             
             while self.running:
                 sleep(self.SLEEPTIME)
-                # TODO: tts 
-                # while True:    
-                #     with open('input_text.txt', 'r') as f:
-                #         input_text = f.readline().strip()
-                #     if input_text != '':
-                #         break
-                input_text = "안녕하세요"
-                    
-                tts_ko = gTTS(text=input_text, lang='ko')
-                mp3_fp = io.BytesIO()
-                tts_ko.write_to_fp(mp3_fp)
-                mp3_fp.seek(0)
-                audio = AudioSegment.from_file(mp3_fp, format="mp3")
-                audio = audio.set_frame_rate(16000)
-                audio_array = np.array(audio.get_array_of_samples(), dtype=np.float32) / 2**15
+
+                input_text = self.input_text_q.get()
+                audio_array = self.tts_function(input_text)
                 
                 with self.item_available:
                     self.item_available.wait_for(lambda: buf.getlen() <= self.BUFMAX)
@@ -291,12 +293,10 @@ class VoiceCommunication:
                 with self.audio_available:
                     self.audio_available.wait_for(lambda: buff.getlen() >= self.buffer_length)
                     chunk = buff.getx(buff.getlen())
-                    segments, info = self.whisper_model.transcribe(chunk, 
-                                                            no_speech_threshold=0.6, # TODO
-                                                            language='ko')
-                    for segment in segments:
-                        if segment.no_speech_prob < 0.6:
-                            print(segment.text, sep=' ', flush=True)
+
+                    text = self.stt_function(chunk)
+                    if text:
+                        self.output_text_q.put(text)
                                                             
                     self.audio_available.notify()
 
@@ -340,6 +340,9 @@ class VoiceCommunication:
         t_thread.join()
         p_thread.join()
         self.socket.close()
+    
+    def getqueue(self):
+        return self.input_text_q, self.output_text_q
         
 # Usage
 if __name__ == '__main__':
@@ -352,5 +355,10 @@ if __name__ == '__main__':
     if not ip:
         ip = '127.0.0.1'
     print("IP address:", ip )
-    vc = VoiceCommunication(ip, 9001, source_name=source_name, destination_name=dest_name, typevoice=typevoice)
+    
+    vc = VoiceCommunication(ip, 9001, 
+                            source_name=source_name, 
+                            destination_name=dest_name, 
+                            typevoice=typevoice)
+    input_text_q, output_text_q = vc.getqueue()
     vc.run()
