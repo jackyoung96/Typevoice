@@ -1,3 +1,6 @@
 numpy
 sounddevice
 pycryptodome
+gtts
+pydub
+faster_whisper

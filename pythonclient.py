@@ -27,6 +27,12 @@ import io
 
 ###########################################
 
+########## TTK ############
+from tkinter import *
+from tkinter import ttk
+
+###########################
+
 MAX_BYTES_SEND = 512  # Must be less than 1024 because of networking limits
 MAX_HEADER_LEN = 20  # allocates 20 bytes to store length of data that is transmitted
 print("client started")
@@ -41,6 +47,8 @@ print("_________________________________________________________________________
 
 # SERVER_IP = '0.0.0.0'  # Change this to the external IP of the server
 # SERVER_IP = '127.0.0.1'  # Change this to the external IP of the server
+with open('ip.txt', 'r') as f:
+    SERVER_IP = f.readline().strip()
 
 SERVER_PORT = 9001
 BUFMAX = buffer_length * 3
@@ -260,6 +268,9 @@ def receive(socket):
         except ConnectionResetError:
             print("Recipient disconnected")
             yield None
+        except:
+            print("something unknown")
+            yield None
 
 
 def receive_play_thread(serversocket, typevoice=False):
@@ -275,12 +286,11 @@ def receive_play_thread(serversocket, typevoice=False):
                 data = next(rece_generator)
             except StopIteration:
                 break
-            if data is None:
-                break
-            with audio_available:
-                audio_available.wait_for(lambda: buff.getlen() <= BUFMAX)
-                buff.extbuf(data)
-                audio_available.notify()
+            if data is not None:
+                with audio_available:
+                    audio_available.wait_for(lambda: buff.getlen() <= BUFMAX)
+                    buff.extbuf(data)
+                    audio_available.notify()
 
         print("RECEIVER ENDS HERE")
 
@@ -335,6 +345,9 @@ def receive_play_thread(serversocket, typevoice=False):
 
 
 def run(args):
+    win=Tk()
+    win.geometry("700x350")
+    
     serversocket = connect()
     global running
     t_thread = Thread(target=record_transmit_thread, args=(serversocket, args.typevoice))
