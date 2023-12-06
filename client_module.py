@@ -347,5 +347,10 @@ if __name__ == '__main__':
     dest_name = input('destination name:').strip()
     typevoice = input('typevoice (y/n):').strip()
     typevoice = True if typevoice.lower() == 'y' else False
-    vc = VoiceCommunication('127.0.0.1', 9001, source_name=source_name, destination_name=dest_name, typevoice=typevoice)
+    with open('ip.txt', 'r') as f:
+        ip = f.readline().strip()
+    if not ip:
+        ip = '127.0.0.1'
+    print("IP address:", ip )
+    vc = VoiceCommunication(ip, 9001, source_name=source_name, destination_name=dest_name, typevoice=typevoice)
     vc.run()
