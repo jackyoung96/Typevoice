@@ -5,6 +5,7 @@ import numpy as np
 
 def base_tts(input_text):
     tts_ko = gTTS(text=input_text, lang='ko')
+    # tts_ko = gTTS(text=input_text)
     mp3_fp = io.BytesIO()
     tts_ko.write_to_fp(mp3_fp)
     mp3_fp.seek(0)

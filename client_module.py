@@ -155,6 +155,7 @@ class VoiceCommunication:
 
         s.send((destination_name + (' ' * (512 - len(destination_name)))).encode())
         sleep(2)
+        
         val = s.recv(2)
         if val.decode() != 'go':
             raise TypeError
@@ -330,15 +331,18 @@ class VoiceCommunication:
 
     def run(self):
         print("Use typevoice:", self.typevoice)
-        t_thread = Thread(target=self.record_transmit_thread, args=(self.socket,))
-        p_thread = Thread(target=self.receive_play_thread, args=(self.socket,))
-        t_thread.start()
-        p_thread.start()
-        input("Press Enter to exit")
-        self.running = False
-        self.sdstream.stop()
-        t_thread.join()
-        p_thread.join()
+        try:
+            t_thread = Thread(target=self.record_transmit_thread, args=(self.socket,))
+            p_thread = Thread(target=self.receive_play_thread, args=(self.socket,))
+            t_thread.start()
+            p_thread.start()
+            input("Press Enter to exit")
+            self.running = False
+            self.sdstream.stop()
+            t_thread.join()
+            p_thread.join()
+        except KeyboardInterrupt:
+            print("keyboard interrupt")
         self.socket.close()
     
     def getqueue(self):
