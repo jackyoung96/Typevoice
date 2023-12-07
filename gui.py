@@ -61,6 +61,11 @@ class ChatWindow(QWidget):
             self.input_line.returnPressed.connect(self.send_message)  # 엔터 키 이벤트 연결
             layout.addWidget(self.input_line)
 
+            # clear 버튼
+            clear_button = QPushButton('Clear')
+            clear_button.clicked.connect(self.messageList.clear)
+            layout.addWidget(clear_button)
+
             # 통화 종료 버튼 설정
             hangupButton = QPushButton()
             hangupButton.setIcon(QIcon('hangup.png'))  # 이미지 파일 경로를 지정해야 합니다
@@ -152,7 +157,7 @@ def main():
         ip = f.readline().strip()
     if not ip:
         ip = '127.0.0.1'
-    ip = '127.0.0.1'
+    # ip = '127.0.0.1'
 
     try:
         vc = VoiceCommunication(ip, 9001, source_name=source_name, destination_name=dest_name, typevoice=typevoice)
